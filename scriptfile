@@ -1,0 +1,44 @@
+node('master')
+{
+    def mavenhome= tool name: "maven"
+    stage('githubcheckout')
+    {
+        git credentialsId: 'GithubCredentials', url: 'https://github.com/mahenndhar1/maven-web-application.git'
+    }
+
+    stage('buildartifact')
+    {
+    sh "${mavenhome}/bin/mvn clean package"
+    
+        }
+    
+stage('sonar report')
+    {
+        sh "${mavenhome}/bin/mvn sonar:sonar"
+    }
+    
+    stage('nexus Remoterepo')
+    {
+        sh "${mavenhome}/bin/mvn deploy"
+    }
+    stage('tomcat deploy')
+    
+    {
+    sshagent(['a0b46098-402a-4d9e-85c7-5b0a864ec9ad']) {
+    // some block
+    sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@3.6.89.140:/opt/apache-tomcat-9.0.31/webapps/"
+}
+    }
+    stage('email notification')
+    {
+        emailext body: '''Hi
+
+Deployment is sucessfull completed.
+
+
+Thanks & Regards.
+Mahender
+9945622448 ''', subject: 'mail config', to: 'mahendervemula81@gmail.com'
+    }
+    
+}
